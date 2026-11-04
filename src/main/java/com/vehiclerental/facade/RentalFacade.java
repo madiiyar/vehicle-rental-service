@@ -85,7 +85,7 @@ public class RentalFacade {
 
         Vehicle vehicle = fleet.get(vehicleId);
         if (vehicle == null) {
-            throw new IllegalArgumentException("Vehicle not found: " + vehicleId);
+            throw new IllegalStateException("Vehicle not found: " + vehicleId);
         }
         if (!vehicle.isAvailable()) {
             throw new IllegalStateException("Vehicle is currently unavailable: " + vehicleId);
