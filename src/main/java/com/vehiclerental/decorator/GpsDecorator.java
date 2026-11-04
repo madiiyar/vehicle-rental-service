@@ -10,7 +10,8 @@ public class GpsDecorator extends RentalDecorator {
 
     @Override
     public double calculateTotalPrice() {
-        return super.calculateTotalPrice() + 10.0;
+        double price = super.calculateTotalPrice() + 10.0;
+        return Math.round(price * 100.0) / 100.0;
     }
 
     @Override

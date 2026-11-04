@@ -16,11 +16,14 @@ public class WeeklyNightPricing implements PricingStrategy {
             throw new IllegalArgumentException("Vehicle cannot be null and duration must be positive");
         }
         double basePrice = vehicle.getBaseHourlyRate() * durationHours;
+        double price;
         if (durationHours >= 168) {
-            return basePrice * 0.70;
+            price = basePrice * 0.70;
         } else if (durationHours >= 12) {
-            return basePrice * 0.90;
+            price = basePrice * 0.90;
+        } else {
+            price = basePrice;
         }
-        return basePrice;
+        return Math.round(price * 100.0) / 100.0;
     }
 }

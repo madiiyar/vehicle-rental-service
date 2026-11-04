@@ -16,7 +16,7 @@ public class DailyPricing implements PricingStrategy {
             throw new IllegalArgumentException("Vehicle cannot be null and duration must be positive");
         }
         double basePrice = vehicle.getBaseHourlyRate() * durationHours;
-        return (durationHours >= 24) ? basePrice * 0.85 : basePrice;
-
+        double price = (durationHours >= 24) ? basePrice * 0.85 : basePrice;
+        return Math.round(price * 100.0) / 100.0;
     }
 }

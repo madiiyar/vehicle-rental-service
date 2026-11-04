@@ -15,6 +15,7 @@ public class HourlyPricing implements PricingStrategy {
         if (vehicle == null || durationHours <= 0) {
             throw new IllegalArgumentException("Vehicle cannot be null and duration must be positive");
         }
-        return vehicle.getBaseHourlyRate() * durationHours;
+        double price = vehicle.getBaseHourlyRate() * durationHours;
+        return Math.round(price * 100.0) / 100.0;
     }
 }

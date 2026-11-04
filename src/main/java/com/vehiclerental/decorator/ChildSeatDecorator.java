@@ -10,7 +10,8 @@ public class ChildSeatDecorator extends RentalDecorator {
 
     @Override
     public double calculateTotalPrice() {
-        return super.calculateTotalPrice() + 12.0;
+        double price = super.calculateTotalPrice() + 12.0;
+        return Math.round(price * 100.0) / 100.0;
     }
 
     @Override
