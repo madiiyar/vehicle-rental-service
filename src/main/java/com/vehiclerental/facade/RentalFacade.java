@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Facade pattern implementation providing a unified high-level interface
+ * over VehicleFactory, RentalBuilder, PricingStrategy, RentalDecorator, and AvailabilityPublisher.
+ */
 public class RentalFacade {
     private final Map<String, Vehicle> fleet = new LinkedHashMap<>();
     private final Map<String, Rental> activeRentals = new LinkedHashMap<>();
@@ -41,15 +45,18 @@ public class RentalFacade {
         if (vehicle == null) {
             throw new IllegalArgumentException("Vehicle cannot be null");
         }
-        // ИСПРАВЛЕНИЕ 2: Проверка на дубликат ID машины во флоте
-        if (fleet.containsKey(vehicle.getId())) {
-            throw new IllegalArgumentException("Vehicle with ID already exists in fleet: " + vehicle.getId());
+        String normalizedId = (vehicle.getId() != null) ? vehicle.getId().trim() : "";
+        if (normalizedId.isEmpty()) {
+            throw new IllegalArgumentException("Vehicle ID cannot be null or blank");
         }
-        fleet.put(vehicle.getId(), vehicle);
+        if (fleet.containsKey(normalizedId)) {
+            throw new IllegalArgumentException("Vehicle with ID already exists in fleet: " + normalizedId);
+        }
+        fleet.put(normalizedId, vehicle);
         publisher.notifyListeners(
                 RentalEventType.VEHICLE_REGISTERED,
                 vehicle,
-                "Registered vehicle " + vehicle.getId() + " (" + vehicle.getModel() + ")"
+                "Registered vehicle " + normalizedId + " (" + vehicle.getModel() + ")"
         );
     }
 
@@ -57,12 +64,16 @@ public class RentalFacade {
         if (type == null) {
             throw new IllegalArgumentException("VehicleType cannot be null");
         }
+        String normalizedId = (id != null) ? id.trim() : "";
+        if (fleet.containsKey(normalizedId)) {
+            throw new IllegalArgumentException("Vehicle with ID already exists in fleet: " + normalizedId);
+        }
         VehicleFactory factory = switch (type) {
             case CAR -> new CarFactory();
             case BIKE -> new BikeFactory();
             case VAN -> new VanFactory();
         };
-        Vehicle vehicle = factory.orderNewVehicle(id, model, baseHourlyRate);
+        Vehicle vehicle = factory.orderNewVehicle(normalizedId, model, baseHourlyRate);
         registerVehicleInstance(vehicle);
         return vehicle;
     }
@@ -77,18 +88,21 @@ public class RentalFacade {
             String promoCode,
             String notes
     ) {
-        // Match the ID normalization performed by RentalBuilder.
-        String normalizedRentalId = rentalId == null ? null : rentalId.trim();
+        String normalizedRentalId = (rentalId != null) ? rentalId.trim() : "";
+        if (normalizedRentalId.isEmpty()) {
+            throw new IllegalArgumentException("Rental ID cannot be null or blank");
+        }
         if (activeRentals.containsKey(normalizedRentalId)) {
             throw new IllegalArgumentException("Active rental with ID already exists: " + normalizedRentalId);
         }
 
-        Vehicle vehicle = fleet.get(vehicleId);
+        String normalizedVehicleId = (vehicleId != null) ? vehicleId.trim() : "";
+        Vehicle vehicle = fleet.get(normalizedVehicleId);
         if (vehicle == null) {
-            throw new IllegalStateException("Vehicle not found: " + vehicleId);
+            throw new IllegalArgumentException("Vehicle not found: " + normalizedVehicleId);
         }
         if (!vehicle.isAvailable()) {
-            throw new IllegalStateException("Vehicle is currently unavailable: " + vehicleId);
+            throw new IllegalStateException("Vehicle is currently unavailable: " + normalizedVehicleId);
         }
 
         Rental rental = new RentalBuilder()
@@ -114,7 +128,7 @@ public class RentalFacade {
         }
 
         vehicle.setAvailable(false);
-        activeRentals.put(rental.getRentalId(), rental);
+        activeRentals.put(normalizedRentalId, rental);
 
         publisher.notifyListeners(
                 RentalEventType.VEHICLE_RENTED,
@@ -127,13 +141,10 @@ public class RentalFacade {
     }
 
     public void returnVehicle(String rentalId) {
-        if (rentalId == null || rentalId.isBlank()) {
-            throw new IllegalArgumentException("Rental ID must not be blank");
-        }
-        String normalizedRentalId = rentalId.trim();
+        String normalizedRentalId = (rentalId != null) ? rentalId.trim() : "";
         Rental rental = activeRentals.remove(normalizedRentalId);
         if (rental == null) {
-            throw new IllegalArgumentException("Active rental not found: " + rentalId);
+            throw new IllegalArgumentException("Active rental not found: " + normalizedRentalId);
         }
         Vehicle vehicle = rental.getVehicle();
         vehicle.setAvailable(true);
@@ -145,9 +156,10 @@ public class RentalFacade {
     }
 
     public void applyPriceDrop(String vehicleId, double newHourlyRate) {
-        Vehicle vehicle = fleet.get(vehicleId);
+        String normalizedVehicleId = (vehicleId != null) ? vehicleId.trim() : "";
+        Vehicle vehicle = fleet.get(normalizedVehicleId);
         if (vehicle == null) {
-            throw new IllegalArgumentException("Vehicle not found: " + vehicleId);
+            throw new IllegalArgumentException("Vehicle not found: " + normalizedVehicleId);
         }
         if (newHourlyRate <= 0) {
             throw new IllegalArgumentException("New hourly rate must be positive");

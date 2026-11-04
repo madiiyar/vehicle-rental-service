@@ -7,6 +7,9 @@ import com.vehiclerental.contract.Vehicle;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * Concrete Observer that tracks real-time counts of all RentalEventType occurrences.
+ */
 public class FleetAnalyticsListener implements RentalListener {
     private final Map<RentalEventType, Integer> eventCounts = new EnumMap<>(RentalEventType.class);
 

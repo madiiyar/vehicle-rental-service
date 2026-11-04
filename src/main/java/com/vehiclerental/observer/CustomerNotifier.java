@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Concrete Observer that sends SMS notifications to subscribed customers
+ * when vehicles become available or receive a price drop.
+ */
 public class CustomerNotifier implements RentalListener {
     private final String customerName;
     private final List<String> receivedNotifications = new ArrayList<>();
@@ -16,7 +20,7 @@ public class CustomerNotifier implements RentalListener {
         if (customerName == null || customerName.isBlank()) {
             throw new IllegalArgumentException("Customer name cannot be null or blank");
         }
-        this.customerName = customerName;
+        this.customerName = customerName.trim();
     }
 
     @Override

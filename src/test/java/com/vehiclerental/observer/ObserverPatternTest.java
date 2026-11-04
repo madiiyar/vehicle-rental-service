@@ -84,6 +84,18 @@ class ObserverPatternTest {
         assertEquals(0, analytics.getEventCount(RentalEventType.PRICE_DROPPED));
     }
 
+    @Test
+    void publisherShouldIgnoreDuplicateListenerSubscriptions() {
+        CustomerNotifier aigerim = new CustomerNotifier("Aigerim");
+        publisher.subscribe(aigerim);
+        publisher.subscribe(aigerim); // duplicate subscription attempt
+
+        publisher.notifyListeners(RentalEventType.VEHICLE_AVAILABLE, stubVehicle, "Available!");
+
+        assertEquals(1, publisher.getListeners().size());
+        assertEquals(1, aigerim.getReceivedNotifications().size());
+    }
+
     private static class TestVehicleStub implements Vehicle {
         private final String id;
         private final String model;

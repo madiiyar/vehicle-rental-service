@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Subject/Publisher in the Observer pattern.
+ * Manages RentalListener subscriptions and broadcasts fleet events.
+ */
 public class AvailabilityPublisher {
     private final List<RentalListener> listeners = new ArrayList<>();
 
@@ -29,7 +33,10 @@ public class AvailabilityPublisher {
     }
 
     public void notifyListeners(RentalEventType eventType, Vehicle vehicle, String message) {
-        for (RentalListener listener : listeners) {
+        if (eventType == null || vehicle == null) {
+            throw new IllegalArgumentException("Event type and vehicle cannot be null");
+        }
+        for (RentalListener listener : new ArrayList<>(listeners)) {
             listener.onRentalEvent(eventType, vehicle, message);
         }
     }
