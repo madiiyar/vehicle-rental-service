@@ -1,4 +1,7 @@
-package main.java.com.vehiclerental.contract;
+package com.vehiclerental.contract;
 
-public class ExtraType {
+public enum ExtraType {
+    INSURANCE,
+    GPS,
+    CHILD_SEAT
 }
