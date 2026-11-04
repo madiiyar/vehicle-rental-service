@@ -77,9 +77,10 @@ public class RentalFacade {
             String promoCode,
             String notes
     ) {
-        // ИСПРАВЛЕНИЕ 1: Проверка на дубликат ID активной аренды
-        if (activeRentals.containsKey(rentalId)) {
-            throw new IllegalArgumentException("Active rental with ID already exists: " + rentalId);
+        // Match the ID normalization performed by RentalBuilder.
+        String normalizedRentalId = rentalId == null ? null : rentalId.trim();
+        if (activeRentals.containsKey(normalizedRentalId)) {
+            throw new IllegalArgumentException("Active rental with ID already exists: " + normalizedRentalId);
         }
 
         Vehicle vehicle = fleet.get(vehicleId);
@@ -91,7 +92,7 @@ public class RentalFacade {
         }
 
         Rental rental = new RentalBuilder()
-                .withRentalId(rentalId)
+                .withRentalId(normalizedRentalId)
                 .withCustomerName(customerName)
                 .withVehicle(vehicle)
                 .withDurationHours(durationHours)
@@ -113,7 +114,7 @@ public class RentalFacade {
         }
 
         vehicle.setAvailable(false);
-        activeRentals.put(rentalId, rental);
+        activeRentals.put(rental.getRentalId(), rental);
 
         publisher.notifyListeners(
                 RentalEventType.VEHICLE_RENTED,
@@ -126,7 +127,11 @@ public class RentalFacade {
     }
 
     public void returnVehicle(String rentalId) {
-        Rental rental = activeRentals.remove(rentalId);
+        if (rentalId == null || rentalId.isBlank()) {
+            throw new IllegalArgumentException("Rental ID must not be blank");
+        }
+        String normalizedRentalId = rentalId.trim();
+        Rental rental = activeRentals.remove(normalizedRentalId);
         if (rental == null) {
             throw new IllegalArgumentException("Active rental not found: " + rentalId);
         }
