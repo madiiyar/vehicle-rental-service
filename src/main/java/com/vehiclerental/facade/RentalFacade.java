@@ -41,6 +41,10 @@ public class RentalFacade {
         if (vehicle == null) {
             throw new IllegalArgumentException("Vehicle cannot be null");
         }
+        // ИСПРАВЛЕНИЕ 2: Проверка на дубликат ID машины во флоте
+        if (fleet.containsKey(vehicle.getId())) {
+            throw new IllegalArgumentException("Vehicle with ID already exists in fleet: " + vehicle.getId());
+        }
         fleet.put(vehicle.getId(), vehicle);
         publisher.notifyListeners(
                 RentalEventType.VEHICLE_REGISTERED,
@@ -73,6 +77,11 @@ public class RentalFacade {
             String promoCode,
             String notes
     ) {
+        // ИСПРАВЛЕНИЕ 1: Проверка на дубликат ID активной аренды
+        if (activeRentals.containsKey(rentalId)) {
+            throw new IllegalArgumentException("Active rental with ID already exists: " + rentalId);
+        }
+
         Vehicle vehicle = fleet.get(vehicleId);
         if (vehicle == null) {
             throw new IllegalArgumentException("Vehicle not found: " + vehicleId);
