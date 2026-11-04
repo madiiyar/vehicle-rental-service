@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor Client as Main (Client)
+    participant Facade as RentalFacade
+    participant Vehicle as Car ("CAR-101")
+    participant Pub as AvailabilityPublisher
+    participant Cust as CustomerNotifier ("Aigerim")
+    participant Stat as FleetAnalyticsListener
+
+    Client->>Facade: returnVehicle("R-102")
+    Facade->>Vehicle: setAvailable(true)
+    Facade->>Pub: notifyListeners(VEHICLE_AVAILABLE, vehicle, "Vehicle CAR-101 is now available for booking!")
+    loop for each subscribed RentalListener
+        Pub->>Cust: onRentalEvent(VEHICLE_AVAILABLE, vehicle, message)
+        Cust-->>Pub: ack (prints SMS alert & stores notification)
+        Pub->>Stat: onRentalEvent(VEHICLE_AVAILABLE, vehicle, message)
+        Stat-->>Pub: ack (increments VEHICLE_AVAILABLE counter)
+    end
+    Pub-->>Facade: notifications complete
+    Facade-->>Client: void

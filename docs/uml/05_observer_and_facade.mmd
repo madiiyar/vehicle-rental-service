@@ -1,0 +1,68 @@
+classDiagram
+    direction TB
+
+    class RentalEventType {
+        <<enumeration>>
+        VEHICLE_REGISTERED
+        VEHICLE_RENTED
+        VEHICLE_AVAILABLE
+        PRICE_DROPPED
+    }
+
+    class RentalListener {
+        <<interface Observer>>
+        +getListenerName() String
+        +onRentalEvent(RentalEventType eventType, Vehicle vehicle, String message) void
+    }
+
+    class CustomerNotifier {
+        <<ConcreteObserver>>
+        -String customerName
+        -List~String~ receivedNotifications
+        +CustomerNotifier(String customerName)
+        +getListenerName() String
+        +onRentalEvent(RentalEventType eventType, Vehicle vehicle, String message) void
+        +getCustomerName() String
+        +getReceivedNotifications() List~String~
+    }
+
+    class FleetAnalyticsListener {
+        <<ConcreteObserver>>
+        -Map~RentalEventType, Integer~ eventCounts
+        +getListenerName() String
+        +onRentalEvent(RentalEventType eventType, Vehicle vehicle, String message) void
+        +getEventCount(RentalEventType type) int
+    }
+
+    class AvailabilityPublisher {
+        <<Subject / Publisher>>
+        -List~RentalListener~ listeners
+        +subscribe(RentalListener listener) void
+        +unsubscribe(RentalListener listener) void
+        +getListeners() List~RentalListener~
+        +notifyListeners(RentalEventType eventType, Vehicle vehicle, String message) void
+    }
+
+    class RentalFacade {
+        <<Facade>>
+        -Map~String, Vehicle~ fleet
+        -Map~String, Rental~ activeRentals
+        -AvailabilityPublisher publisher
+        +addListener(RentalListener listener) void
+        +removeListener(RentalListener listener) void
+        +registerVehicleInstance(Vehicle vehicle) void
+        +registerVehicle(VehicleType type, String id, String model, double baseHourlyRate) Vehicle
+        +rentVehicle(String rentalId, String customerName, String vehicleId, int durationHours, PricingStrategy strategy, List~ExtraType~ extras, String promoCode, String notes) Rental
+        +returnVehicle(String rentalId) void
+        +applyPriceDrop(String vehicleId, double newHourlyRate) void
+        +getAvailableVehicles() List~Vehicle~
+        +getActiveRentals() Collection~Rental~
+    }
+
+    RentalListener <|.. CustomerNotifier : implements
+    RentalListener <|.. FleetAnalyticsListener : implements
+    AvailabilityPublisher o-- RentalListener : notifies >
+    AvailabilityPublisher ..> RentalEventType : uses
+    RentalFacade *-- AvailabilityPublisher : owns >
+    RentalFacade ..> RentalListener : registers
+    RentalFacade ..> RentalEventType : triggers
