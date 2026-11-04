@@ -81,4 +81,91 @@ class RentalFacadeUnitTest {
         assertEquals(1, analyticsListener.getEventCount(RentalEventType.VEHICLE_AVAILABLE));
         assertEquals(1, customerNotifier.getReceivedNotifications().size());
     }
+
+    @Test
+    void shouldReturnPaddedRentalUsingItsReportedId() {
+        Vehicle car = facade.registerVehicle(VehicleType.CAR, "C-1", "Camry", 10.0);
+        Rental rental = facade.rentVehicle(" R-101 ", "Amir", "C-1", 5,
+                new HourlyPricing(), List.of(ExtraType.GPS), null, null);
+
+        assertEquals("R-101", rental.getRentalId());
+        facade.returnVehicle(rental.getRentalId());
+
+        assertTrue(car.isAvailable());
+        assertTrue(facade.getActiveRentals().isEmpty());
+        assertEquals(1, analyticsListener.getEventCount(RentalEventType.VEHICLE_AVAILABLE));
+    }
+
+    @Test
+    void shouldRejectCanonicalDuplicateOfPaddedRentalId() {
+        Vehicle first = facade.registerVehicle(VehicleType.CAR, "C-1", "First", 10.0);
+        Vehicle second = facade.registerVehicle(VehicleType.CAR, "C-2", "Second", 10.0);
+        Rental original = facade.rentVehicle(" R-101 ", "Amir", "C-1", 5,
+                new HourlyPricing(), List.of(), null, null);
+
+        assertThrows(IllegalArgumentException.class, () -> facade.rentVehicle(
+                "R-101", "Other", "C-2", 5, new HourlyPricing(), List.of(), null, null));
+
+        assertEquals(1, facade.getActiveRentals().size());
+        assertSame(original, facade.getActiveRentals().iterator().next());
+        assertFalse(first.isAvailable());
+        assertTrue(second.isAvailable());
+        assertEquals(1, analyticsListener.getEventCount(RentalEventType.VEHICLE_RENTED));
+    }
+
+    @Test
+    void shouldRejectWhitespaceVariantsOfExistingRentalId() {
+        facade.registerVehicle(VehicleType.CAR, "C-1", "First", 10.0);
+        Vehicle second = facade.registerVehicle(VehicleType.CAR, "C-2", "Second", 10.0);
+        facade.rentVehicle("R-101", "Amir", "C-1", 5,
+                new HourlyPricing(), List.of(), null, null);
+
+        for (String id : new String[]{"R-101", " R-101 ", "  R-101"}) {
+            assertThrows(IllegalArgumentException.class, () -> facade.rentVehicle(
+                    id, "Other", "C-2", 5, new HourlyPricing(), List.of(), null, null));
+        }
+        assertEquals(1, facade.getActiveRentals().size());
+        assertTrue(second.isAvailable());
+    }
+
+    @Test
+    void shouldTrimRentalIdSuppliedForReturn() {
+        Vehicle car = facade.registerVehicle(VehicleType.CAR, "C-1", "Camry", 10.0);
+        facade.rentVehicle("R-101", "Amir", "C-1", 5,
+                new HourlyPricing(), List.of(), null, null);
+
+        facade.returnVehicle(" R-101 ");
+
+        assertTrue(car.isAvailable());
+        assertTrue(facade.getActiveRentals().isEmpty());
+    }
+
+    @Test
+    void shouldRejectInvalidRentalIdsWithoutChangingFleetOrRecords() {
+        Vehicle car = facade.registerVehicle(VehicleType.CAR, "C-1", "Camry", 10.0);
+        for (String id : new String[]{null, "", "   "}) {
+            assertThrows(IllegalStateException.class, () -> facade.rentVehicle(
+                    id, "Amir", "C-1", 5, new HourlyPricing(), List.of(), null, null));
+            assertThrows(IllegalArgumentException.class, () -> facade.returnVehicle(id));
+        }
+        assertTrue(car.isAvailable());
+        assertTrue(facade.getActiveRentals().isEmpty());
+        assertEquals(0, analyticsListener.getEventCount(RentalEventType.VEHICLE_RENTED));
+    }
+
+    @Test
+    void shouldRejectDuplicateVehicleIdWithoutReplacingRentedVehicle() {
+        Vehicle car = facade.registerVehicle(VehicleType.CAR, "C-1", "Original", 10.0);
+        Rental rental = facade.rentVehicle("R-101", "Amir", "C-1", 5,
+                new HourlyPricing(), List.of(), null, null);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                facade.registerVehicle(VehicleType.CAR, " C-1 ", "Replacement", 20.0));
+        assertSame(car, rental.getVehicle());
+        assertEquals(0, facade.getAvailableVehicles().size());
+        assertEquals(1, analyticsListener.getEventCount(RentalEventType.VEHICLE_REGISTERED));
+
+        facade.returnVehicle("R-101");
+        assertSame(car, facade.getAvailableVehicles().get(0));
+    }
 }
