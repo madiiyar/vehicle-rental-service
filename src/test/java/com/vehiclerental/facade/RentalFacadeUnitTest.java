@@ -144,7 +144,7 @@ class RentalFacadeUnitTest {
     void shouldRejectInvalidRentalIdsWithoutChangingFleetOrRecords() {
         Vehicle car = facade.registerVehicle(VehicleType.CAR, "C-1", "Camry", 10.0);
         for (String id : new String[]{null, "", "   "}) {
-            assertThrows(IllegalStateException.class, () -> facade.rentVehicle(
+            assertThrows(IllegalArgumentException.class, () -> facade.rentVehicle(
                     id, "Amir", "C-1", 5, new HourlyPricing(), List.of(), null, null));
             assertThrows(IllegalArgumentException.class, () -> facade.returnVehicle(id));
         }

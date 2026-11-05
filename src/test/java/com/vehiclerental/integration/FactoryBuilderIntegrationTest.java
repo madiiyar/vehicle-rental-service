@@ -79,10 +79,13 @@ class FactoryBuilderIntegrationTest {
                 "RENT-101", "Amir", "CAR-101", 5, strategy,
                 List.of(), null, null);
 
+        // Уже арендованная машина -> IllegalStateException
         assertThrows(IllegalStateException.class, () -> facade.rentVehicle(
                 "RENT-102", "Other customer", "CAR-101", 2, strategy,
                 List.of(), null, null));
-        assertThrows(IllegalStateException.class, () -> facade.rentVehicle(
+
+        // Несуществующая машина -> IllegalArgumentException
+        assertThrows(IllegalArgumentException.class, () -> facade.rentVehicle(
                 "RENT-103", "Other customer", "MISSING", 2, strategy,
                 List.of(), null, null));
 
