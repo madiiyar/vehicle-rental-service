@@ -1,0 +1,35 @@
+﻿classDiagram
+    class Rental {
+        <<interface>>
+        +calculateTotalPrice() double
+        +getDescription() String
+        +getRentalId() String
+        +getCustomerName() String
+        +getVehicle() Vehicle
+        +getDurationHours() int
+        +getPricingStrategy() PricingStrategy
+    }
+    class RentalDecorator {
+        <<abstract>>
+        #Rental wrappedRental
+        +calculateTotalPrice() double
+        +getDescription() String
+    }
+    class InsuranceDecorator {
+        +calculateTotalPrice() double
+        +getDescription() String
+    }
+    class GpsDecorator {
+        +calculateTotalPrice() double
+        +getDescription() String
+    }
+    class ChildSeatDecorator {
+        +calculateTotalPrice() double
+        +getDescription() String
+    }
+
+    Rental <|.. RentalDecorator
+    RentalDecorator *-- Rental
+    RentalDecorator <|-- InsuranceDecorator
+    RentalDecorator <|-- GpsDecorator
+    RentalDecorator <|-- ChildSeatDecorator

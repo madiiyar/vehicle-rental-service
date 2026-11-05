@@ -1,0 +1,36 @@
+﻿classDiagram
+    class RentalFacade {
+        -Map~String, Vehicle~ fleet
+        -Map~String, Rental~ activeRentals
+        +rentVehicle(String, String, String, int, PricingStrategy, List~ExtraType~, String, String) Rental
+    }
+
+    class PricingStrategy {
+        <<interface>>
+        +calculatePrice(Vehicle, int) double
+    }
+
+    class Rental {
+        <<interface>>
+        +calculateTotalPrice() double
+        +getDescription() String
+    }
+
+    class BaseRental {
+        -String rentalId
+        -PricingStrategy pricingStrategy
+        +calculateTotalPrice() double
+    }
+
+    class RentalDecorator {
+        <<abstract>>
+        #Rental wrappedRental
+        +calculateTotalPrice() double
+    }
+
+    RentalFacade ..> PricingStrategy
+    RentalFacade ..> Rental
+    BaseRental ..|> Rental
+    BaseRental --> PricingStrategy
+    RentalDecorator ..|> Rental
+    RentalDecorator *-- Rental

@@ -1,0 +1,22 @@
+﻿classDiagram
+    class PricingStrategy {
+        <<interface>>
+        +getStrategyName() String
+        +calculatePrice(Vehicle vehicle, int durationHours) double
+    }
+    class HourlyPricing {
+        +getStrategyName() String
+        +calculatePrice(Vehicle vehicle, int durationHours) double
+    }
+    class DailyPricing {
+        +getStrategyName() String
+        +calculatePrice(Vehicle vehicle, int durationHours) double
+    }
+    class WeeklyNightPricing {
+        +getStrategyName() String
+        +calculatePrice(Vehicle vehicle, int durationHours) double
+    }
+
+    PricingStrategy <|.. HourlyPricing
+    PricingStrategy <|.. DailyPricing
+    PricingStrategy <|.. WeeklyNightPricing
