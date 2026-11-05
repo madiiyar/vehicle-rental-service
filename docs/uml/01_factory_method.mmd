@@ -1,0 +1,40 @@
+classDiagram
+class Vehicle { <<interface>>
+ +getId() String
+ +getModel() String
+ +getType() VehicleType
+ +getBaseHourlyRate() double
+ +setBaseHourlyRate(double rate) void
+ +isAvailable() boolean
+ +setAvailable(boolean available) void
+ +getSpecs() String
+}
+class AbstractVehicle { <<abstract>>
+ -String id
+ -String model
+ -VehicleType type
+ -double baseHourlyRate
+ -boolean available
+ +getSpecs() String
+}
+class VehicleFactory { <<abstract>>
+ +createVehicle(String id, String model, double rate) Vehicle
+ +orderNewVehicle(String id, String model, double rate) Vehicle
+}
+class CarFactory { +createVehicle(String id, String model, double rate) Vehicle }
+class BikeFactory { +createVehicle(String id, String model, double rate) Vehicle }
+class VanFactory { +createVehicle(String id, String model, double rate) Vehicle }
+class Car
+class Bike
+class Van
+Vehicle <|.. AbstractVehicle
+AbstractVehicle <|-- Car
+AbstractVehicle <|-- Bike
+AbstractVehicle <|-- Van
+VehicleFactory <|-- CarFactory
+VehicleFactory <|-- BikeFactory
+VehicleFactory <|-- VanFactory
+CarFactory ..> Car : creates
+BikeFactory ..> Bike : creates
+VanFactory ..> Van : creates
+VehicleFactory ..> Vehicle : returns

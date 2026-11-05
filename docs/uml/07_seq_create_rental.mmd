@@ -1,0 +1,28 @@
+sequenceDiagram
+actor Main
+participant F as RentalFacade
+participant B as RentalBuilder
+participant R as BaseRental
+participant P as PricingStrategy
+Note over Main,F: Vehicle already registered using a concrete VehicleFactory
+Main->>F: rentVehicle(id, customer, vehicleId, hours, strategy, extras, promo, notes)
+F->>F: Normalize IDs&#59; reject duplicates, unknown or unavailable vehicle
+F->>B: new RentalBuilder()
+F->>B: withRentalId(...).withCustomerName(...).withVehicle(...)
+F->>B: withDurationHours(...).withPricingStrategy(...)
+F->>B: withPromoCode(...).withNotes(...)
+F->>B: build()
+B->>B: Validate required values
+B->>R: new BaseRental(validated values)
+R-->>B: BaseRental
+B-->>F: Rental
+Note over F,R: Facade wraps extras with RentalDecorator implementations when selected
+F->>F: Set vehicle unavailable&#59; store active rental
+F->>R: calculateTotalPrice() (through decorators if selected)
+R->>P: calculatePrice(vehicle, hours)
+P-->>R: base tariff
+R->>R: Apply AITU10 discount if supplied
+R-->>F: rental total (including extras when wrapped)
+Note over F: Publish VEHICLE_RENTED through AvailabilityPublisher to subscribed listeners
+F-->>Main: Rental
+Note over Main,P: Simplified happy path. Validation errors stop before creation&#59; listener exceptions can propagate after state changes.

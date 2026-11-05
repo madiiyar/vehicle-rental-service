@@ -1,0 +1,47 @@
+classDiagram
+class RentalBuilder {
+ -String rentalId
+ -String customerName
+ -Vehicle vehicle
+ -int durationHours
+ -PricingStrategy pricingStrategy
+ -String promoCode
+ -String notes
+ +withRentalId(String value) RentalBuilder
+ +withCustomerName(String value) RentalBuilder
+ +withVehicle(Vehicle value) RentalBuilder
+ +withDurationHours(int value) RentalBuilder
+ +withPricingStrategy(PricingStrategy value) RentalBuilder
+ +withPromoCode(String value) RentalBuilder
+ +withNotes(String value) RentalBuilder
+ +build() Rental
+}
+class Rental { <<interface>>
+ +getRentalId() String
+ +getCustomerName() String
+ +getVehicle() Vehicle
+ +getDurationHours() int
+ +getPricingStrategy() PricingStrategy
+ +calculateTotalPrice() double
+ +getDescription() String
+}
+class BaseRental {
+ -String rentalId
+ -String customerName
+ -Vehicle vehicle
+ -int durationHours
+ -PricingStrategy pricingStrategy
+ -String promoCode
+ -String notes
+ +calculateTotalPrice() double
+ +getDescription() String
+}
+class Vehicle { <<interface>> }
+class PricingStrategy { <<interface>>
+ +calculatePrice(Vehicle vehicle, int durationHours) double
+}
+RentalBuilder ..> BaseRental : constructs after validation
+RentalBuilder ..> Rental : returns
+BaseRental ..|> Rental
+BaseRental --> Vehicle : retains shared reference
+BaseRental --> PricingStrategy : delegates calculation
