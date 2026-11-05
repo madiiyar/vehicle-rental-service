@@ -1,4 +1,4 @@
-Set-Content -Path "README.md" -Value @'
+
 # Vehicle Rental Service — Design Patterns & SOLID Implementation
 
 Multi-module Java application demonstrating GoF Design Patterns and SOLID principles in an automated vehicle rental ecosystem.
