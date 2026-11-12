@@ -2,11 +2,11 @@ FINAL PROJECT REPORT
 
 # Vehicle Rental Service
 
-Team: Amir, Tangharyk, Madiyar | 8 November 2026
+Team: Amir, Tangharyk, Madiyar | 12 November 2026
 
 ## 1. Project overview
 
-Vehicle Rental Service is a Java console application for managing cars, bikes and vans. It supports vehicle registration, rental creation, flexible pricing, optional extras, returns, rate changes and event notifications. Six design patterns separate these responsibilities into small collaborating components.
+Vehicle Rental Service is a Java application with a Swing desktop interface and a separate console demonstration for managing cars, bikes and vans. It supports vehicle registration, rental creation, flexible pricing, optional extras, returns, rate changes and event notifications. Six design patterns separate these responsibilities into small collaborating components.
 
 ## Objectives
 
@@ -27,37 +27,25 @@ Vehicle Rental Service is a Java console application for managing cars, bikes an
 
 ## Technology and architecture
 
-The Maven configuration targets Java 21 and uses JUnit Jupiter 5.10.2. Main calls RentalFacade, which coordinates the factory, builder, pricing, decorator and observer packages. The contract package defines the shared interfaces and enums. Data stays in memory; customer SMS messages are simulated in the console.
+The project targets Java 21 with Maven and JUnit Jupiter 5.10.2. RentalApplication starts the Swing interface; Main remains the console demo. MainWindow delegates to RentalDesktopModel, which coordinates the existing RentalFacade. Swing is included in the JDK and needs no additional library. Fleet and rental data remain in memory.
 
-# 2. Features and use cases
+# 2. Swing interface and user workflow
 
-The implemented requirements follow the operations exposed by RentalFacade and the console demonstration. They describe the current in-memory service rather than a deployed booking website.
+The desktop workspace provides Fleet overview, Create rental, Active rentals and Activity & alerts. The fleet table supports search and availability filters. Users register vehicles, preview prices, confirm rentals, return vehicles and reduce hourly rates through forms and buttons.
 
-| Use case | Required input or condition | Successful outcome |
-| --- | --- | --- |
-| Register a vehicle | Vehicle type, unique ID, model and positive finite hourly rate. | A concrete vehicle is stored in the fleet and VEHICLE_REGISTERED is published. |
-| Create a rental | Unique active rental ID, customer, available vehicle, positive hours and pricing strategy. | A Rental is created, stored and returned; its vehicle becomes unavailable. |
-| Select extras | Optional list containing insurance, GPS or child-seat selections. | Each selected extra wraps the rental and adds its fee and description. |
-| Return a vehicle | An existing active rental ID, with surrounding spaces normalized. | The active rental is removed and its vehicle becomes available again. |
-| Change an hourly rate | An existing vehicle ID and a positive finite replacement rate. | The rate changes and a PRICE_DROPPED event is published. |
-| Subscribe to events | A non-null RentalListener. | The listener receives subsequent events until it is unsubscribed. |
+![Figure 1. Swing fleet overview rendered from the updated project.](../docs/report_gui/fleet.png)
 
-## Typical customer scenario
+![Figure 2. Updated Daily form: 2 days becomes 48 hours; the selected extras and AITU10 produce $335.76.](../docs/report_gui/quote.png)
 
-A customer selects a registered car, a rental duration and a pricing strategy. The facade checks availability, builds the rental and applies chosen extras. When the rental is returned, subscribed customer listeners receive an availability alert and the analytics listener records the event.
-
-## Scope boundaries
-
-The program has no login, online booking interface, database, payment gateway or external SMS connection. It demonstrates the rental domain and design-pattern collaboration through Java objects, automated tests and console output.
-
-The rate-change method is named applyPriceDrop, but it does not check that the new rate is lower than the previous rate. Its implemented validation requires a positive finite rate.
+These images are off-screen renders of the actual updated Swing components, not captures of a native OS window. The view starts with six sample vehicles unless --empty is supplied. Data resets when the application closes.
 
 # 3. Architecture and class connections
 
-The project separates shared contracts from specialized implementations. Main demonstrates scenarios; RentalFacade coordinates domain operations; the remaining packages provide focused services. This keeps the client from repeating construction, pricing and notification logic.
+The project separates presentation, desktop coordination and domain logic. RentalApplication creates the JFrame on the Swing event-dispatch thread. MainWindow contains the panels and forms. RentalDesktopModel adapts UI requests to the existing rental subsystem; Main remains an alternative console client.
 
 | Package | Key classes or interfaces | Responsibility |
 | --- | --- | --- |
+| ui | RentalApplication, MainWindow, RentalDesktopModel. | Launch the window, manage forms and connect UI actions to the domain. |
 | contract | Vehicle, Rental, PricingStrategy, RentalListener and three enums. | Define the types used across package boundaries. |
 | factory | VehicleFactory, concrete creators and vehicle products. | Create cars, bikes and vans with common identity and rate validation. |
 | builder | RentalBuilder and BaseRental. | Collect validated reservation values and create the base rental. |
@@ -68,11 +56,11 @@ The project separates shared contracts from specialized implementations. Main de
 
 ## Important retained references
 
-BaseRental retains its Vehicle and PricingStrategy. A RentalDecorator retains another Rental, so several extras form a wrapper chain. AvailabilityPublisher retains RentalListener objects. RentalFacade retains registered vehicles, active rentals and its publisher.
+MainWindow retains its RentalDesktopModel. The desktop model owns a RentalFacade and implements RentalListener to track fleet references, event counts and the latest 200 events. BaseRental retains Vehicle and PricingStrategy; a RentalDecorator retains another Rental; the facade owns fleet and active-rental maps.
 
 ## Why the shared contracts matter
 
-A strategy can calculate a price for any Vehicle implementation. A decorator can wrap BaseRental or another decorator through Rental. The publisher can notify any RentalListener implementation without knowing its concrete behavior. The facade still knows concrete factories and decorators where it composes the system.
+Confirm rental calls the desktop model and then RentalFacade. Quote preview uses the same builder, strategies and decorators without storing an active rental. Facade events reach the model through RentalListener; its change callback queues the view refresh on the event-dispatch thread. The facade still selects concrete factories and decorators at composition points.
 
 # 4. Factory Method
 
@@ -80,7 +68,7 @@ A strategy can calculate a price for any Vehicle implementation. A decorator can
 
 **Solution:** VehicleFactory declares createVehicle(...). CarFactory, BikeFactory and VanFactory override it. The common orderNewVehicle(...) operation calls that factory method and returns an available Vehicle.
 
-![Figure 1. Factory Method: creator and product hierarchies.](../docs/uml/01_factory_method.png)
+![Figure 3. Factory Method: creator and product hierarchies.](../docs/uml/01_factory_method.png)
 
 | Role | Implementation |
 | --- | --- |
@@ -97,7 +85,7 @@ AbstractVehicle validates identity, model and a finite positive hourly rate. Ren
 
 **Solution:** RentalBuilder provides seven fluent with... methods. build() checks the required values, trims text and constructs BaseRental through the Rental interface.
 
-![Figure 2. RentalBuilder constructs BaseRental and supplies shared dependencies.](../docs/uml/02_builder.png)
+![Figure 4. RentalBuilder constructs BaseRental and supplies shared dependencies.](../docs/uml/02_builder.png)
 
 Missing required values or a non-positive duration cause IllegalStateException. Blank optional values become null. Product fields are final, but the referenced Vehicle remains mutable; later rate changes can affect future price calculations.
 
@@ -107,7 +95,7 @@ Missing required values or a non-positive duration cause IllegalStateException. 
 
 **Solution:** BaseRental delegates calculation to PricingStrategy. HourlyPricing, DailyPricing and WeeklyNightPricing implement the same contract and can be selected when the rental is built.
 
-![Figure 3. PricingStrategy and its interchangeable implementations.](../docs/uml/03_strategy.png)
+![Figure 5. PricingStrategy and its interchangeable implementations.](../docs/uml/03_strategy.png)
 
 | Strategy | Implemented rule |
 | --- | --- |
@@ -123,7 +111,7 @@ The strategies round their results to two decimal places. BaseRental then applie
 
 For a car at $8 per hour rented for 48 hours, DailyPricing gives $384.00 × 0.85 = $326.40. The AITU10 promotion reduces the base rental to $293.76 before extras.
 
-WeeklyNightPricing uses duration thresholds; it does not inspect actual nighttime hours or calendar dates.
+The updated GUI requests hours for Hourly, days for Daily and weeks for Weekly / long-term. It converts days × 24 and weeks × 168 into service hours. Selecting a policy resets the duration to 5 hours, 1 day or 1 week. The backend still has its 12-hour discount tier, but the weekly GUI input uses whole weeks.
 
 # 7. Decorator: optional extras
 
@@ -131,7 +119,7 @@ WeeklyNightPricing uses duration thresholds; it does not inspect actual nighttim
 
 **Solution:** RentalDecorator implements Rental and retains a wrapped Rental. Each concrete decorator delegates the existing behavior, adds its fee and extends the description. Wrappers can be stacked.
 
-![Figure 4. Optional extras wrap the common Rental interface.](../docs/uml/04_decorator.png)
+![Figure 6. Optional extras wrap the common Rental interface.](../docs/uml/04_decorator.png)
 
 | Extra | Fee |
 | --- | --- |
@@ -139,7 +127,7 @@ WeeklyNightPricing uses duration thresholds; it does not inspect actual nighttim
 | GpsDecorator | $10 flat fee. |
 | ChildSeatDecorator | $12 flat fee. |
 
-In the 48-hour car example, insurance adds $30 and a child seat adds $12, producing **$335.76**. The facade applies extras in list order; repeated extras are not automatically removed.
+In the 48-hour car example, insurance adds $30 and a child seat adds $12, producing **$335.76**. The facade applies extras in list order; repeated extras are not automatically removed. The GUI checkboxes select each extra at most once.
 
 The supplied UML uses a composition symbol for the wrapped rental. Java retains a reference here and does not enforce exclusive ownership.
 
@@ -149,17 +137,17 @@ The supplied UML uses a composition symbol for the wrapped rental. Java retains 
 
 **Facade:** RentalFacade exposes registration, rent, return and rate-change operations. It owns fleet and active-rental maps, selects factories, configures the builder, applies decorators and publishes lifecycle events.
 
-![Figure 5. RentalFacade, event publisher and concrete listeners.](../docs/uml/05_observer_and_facade.png)
+![Figure 7. RentalFacade, event publisher and concrete listeners.](../docs/uml/05_observer_and_facade.png)
 
-Events are VEHICLE_REGISTERED, VEHICLE_RENTED, VEHICLE_AVAILABLE and PRICE_DROPPED. Returning a rental restores availability and removes the active rental. Customer notifications are console simulations rather than messages sent through an external SMS provider.
+The four event types are registration, rental, availability and price drop. RentalDesktopModel also implements RentalListener, so the GUI activity panel receives these events. It tracks counts and stores at most 200 messages. CustomerNotifier remains a console notification implementation; there is no external SMS provider.
 
 # 9. Rental creation sequence
 
-A sequence diagram shows the order of calls during one operation. This successful flow starts after the vehicle has already been registered through a factory.
+The supplied UML shows the console client named Main. The desktop version reaches the same facade through MainWindow and RentalDesktopModel. A quote preview is side-effect free; only Confirm rental follows the reservation sequence below.
 
-![Figure 6. Creating a rental through RentalFacade.](../docs/uml/07_seq_create_rental.png)
+![Figure 8. Creating a rental through RentalFacade.](../docs/uml/07_seq_create_rental.png)
 
-- Main submits the rental details. The facade normalizes IDs and checks uniqueness, vehicle existence and availability.
+- MainWindow converts the selected duration to hours and sends a request through RentalDesktopModel. The facade checks IDs, vehicle existence and availability.
 
 - RentalBuilder validates the values and creates BaseRental with the chosen Vehicle and PricingStrategy.
 
@@ -167,21 +155,21 @@ A sequence diagram shows the order of calls during one operation. This successfu
 
 - Price calculation passes through the wrappers to BaseRental and its strategy. The promotion applies before extra fees.
 
-- The facade publishes VEHICLE_RENTED and returns the Rental to Main.
+- The facade publishes VEHICLE_RENTED and returns the Rental. The desktop refreshes the tables and opens Active rentals.
 
 # 10. Return and notification sequence
 
-returnVehicle(...) removes the active rental, marks its vehicle available and publishes VEHICLE_AVAILABLE. Each subscribed listener receives one callback. Customer listeners print alerts, while the analytics listener increments its event count.
+The GUI asks for confirmation before returning the selected rental. RentalDesktopModel delegates to returnVehicle(...), which removes the active rental, restores availability and publishes VEHICLE_AVAILABLE. The activity panel refreshes through its listener callback. Console listeners continue to work in Main.
 
-![Figure 7. Observer notification after a vehicle is returned.](../docs/uml/08_seq_observer_notification.png)
+![Figure 9. Observer notification after a vehicle is returned.](../docs/uml/08_seq_observer_notification.png)
 
-![Figure 8. Supplied console evidence: return alerts, price-drop alerts and analytics.](../docs/screenshots/03_vehicle_return_and_price_drop_alerts.png)
+![Figure 10. Supplied console evidence: return alerts, price-drop alerts and analytics.](../docs/screenshots/03_vehicle_return_and_price_drop_alerts.png)
 
-The demo finishes with **3 registrations, 3 rentals, 1 availability event and 1 price-drop event**. The supplied sequence simplifies the callback loop; its return arrows represent control returning from void callbacks.
+The console demonstration finishes with **3 registrations, 3 rentals, 1 availability event and 1 price-drop event**; the separate GUI starts with six vehicles. The supplied sequence simplifies the callback loop; its return arrows represent control returning from void callbacks.
 
 # 11. Pricing examples and boundaries
 
-The following comparisons use a vehicle with an hourly rate of $10, before promotions or extras. They demonstrate the actual duration thresholds implemented by the three strategies.
+The table compares backend tariff rules at $10 per hour before promotions or extras. The GUI sends hours directly for Hourly, converts whole days into hours for Daily, and converts whole weeks into hours for Weekly / long-term. For example, 2 Daily days is 48 hours and 1 Weekly week is 168 hours.
 
 | Hours | HourlyPricing | DailyPricing | WeeklyNightPricing |
 | --- | --- | --- | --- |
@@ -212,7 +200,7 @@ BaseRental does not store a fixed price snapshot. If the same referenced vehicle
 
 # 12. Validation and rental state
 
-Validation is split between product creation, rental construction and facade workflows. Invalid requests are rejected at the layer that owns the relevant rule. The current tests distinguish invalid arguments from an unavailable vehicle or incomplete builder state.
+Validation is split between product creation, rental construction and facade workflows. Invalid requests are rejected at the layer that owns the relevant rule. The core tests distinguish invalid arguments from an unavailable vehicle or incomplete builder state. The GUI converts numeric inputs, displays validation dialogs and requires a selected available vehicle.
 
 | Condition | Checking layer | Expected exception |
 | --- | --- | --- |
@@ -222,6 +210,7 @@ Validation is split between product creation, rental construction and facade wor
 | Vehicle is already unavailable. | RentalFacade rental request. | IllegalStateException |
 | Missing builder values or non-positive duration. | RentalBuilder.build(). | IllegalStateException |
 | Unknown active rental on return. | RentalFacade return operation. | IllegalArgumentException |
+| Rate is not a finite positive reduction. | RentalDesktopModel.reduceRate(). | IllegalArgumentException |
 
 ## Successful lifecycle transitions
 
@@ -239,7 +228,7 @@ State changes occur before observer notification. Listener exceptions are not is
 
 All six patterns collaborate through shared contracts. Factory Method produces Vehicle objects; Builder produces a Rental; Strategy computes its base price; Decorator adds extras; Observer distributes events; and Facade coordinates the workflow.
 
-![Figure 9. Supplied subsystem integration view: Rental, pricing and decorators.](../docs/uml/06_integrated_architecture.png)
+![Figure 11. Supplied subsystem integration view: Rental, pricing and decorators.](../docs/uml/06_integrated_architecture.png)
 
 | Principle | Concrete application |
 | --- | --- |
@@ -253,7 +242,7 @@ The supplied integrated UML focuses on the pricing/decorator subsystem. The clas
 
 # 14. Testing and verification strategy
 
-The project includes nine JUnit test classes containing 43 test methods. Unit tests isolate each pattern; facade and integration tests check the resulting state and interactions. The table counts methods in the supplied source, not an estimated coverage percentage.
+The updated archive contains nine JUnit classes and 43 core test methods. It does not include separate JUnit tests for the ui package. The table inventories the submitted source; it does not imply a measured coverage percentage.
 
 | Test class | Tests | Main focus |
 | --- | --- | --- |
@@ -269,7 +258,7 @@ The project includes nine JUnit test classes containing 43 test methods. Unit te
 
 ## How to assess the evidence
 
-The supplied Maven screenshot on the next page reports all 43 tests passing with zero failures and errors. The previous exception-type mismatches are corrected in the latest test source. During report review, production compilation and Main execution also succeeded in the available Java 17 compatibility check. The configured Java 21 Maven suite was not independently rerun in that environment.
+The supplied Maven screenshot reports 43 passing core tests. During this update, production code compiled with Java 21 and Main ran successfully. Off-screen Swing checks confirmed Daily 2 days = 48 hours ($335.76 with the selected promotion/extras), Weekly 1 week = 168 hours, quote previews, booking, returns, rate validation and events. These additional review checks are not part of the 43-test JUnit count. Native windows/dialogs and the full Maven suite were not rerun here.
 
 ## Useful checks before release
 
@@ -281,9 +270,9 @@ The supplied Maven screenshot on the next page reports all 43 tests passing with
 
 # 15. Results and conclusion
 
-The source contains **43 test methods across nine test classes**. They cover factories, builder validation, tariffs, extras, notifications, facade state changes, integrated rental flows and the main demo. The supplied Maven screenshot reports **43 tests run, 0 failures, 0 errors, 0 skipped and BUILD SUCCESS**.
+The submitted source contains **43 core test methods across nine test classes**. They cover factories, builder validation, tariffs, extras, notifications, facade state changes, integrated rental flows and the main demo. The supplied Maven screenshot reports **43 tests run, 0 failures, 0 errors, 0 skipped and BUILD SUCCESS**.
 
-![Figure 10. Team-supplied Maven/JUnit result for the final project.](../docs/screenshots/04_junit5_all_tests_passing.png)
+![Figure 12. Team-supplied Maven/JUnit result for the core project; it does not establish GUI test coverage.](../docs/screenshots/04_junit5_all_tests_passing.png)
 
 | Demo scenario | Result |
 | --- | --- |
@@ -291,10 +280,10 @@ The source contains **43 test methods across nine test classes**. They cover fac
 | Car: 48 hours at $8/hour, DailyPricing, AITU10, insurance + child seat | $335.76 |
 | Van: 168 hours at $14/hour, WeeklyNightPricing, insurance + GPS | $1,761.40 |
 
-![Figure 11. Supplied console output confirms the three rental examples.](../docs/screenshots/02_rental_builder_strategy_decorator.png)
+![Figure 13. Supplied console output confirms the three domain rental examples.](../docs/screenshots/02_rental_builder_strategy_decorator.png)
 
-The latest tests now match the facade exception types for unknown vehicles and blank rental IDs. Production sources compiled and Main ran during this report review using the available Java 17 compatibility check; the Java 21 Maven suite was not independently rerun here.
+Run RentalApplication for the GUI and Main for the console demonstration. The updated desktop forms connect to the same domain behavior; GUI data resets when the app closes. Rendered views were inspected off-screen because this review environment has a headless-only Java runtime.
 
 ## Conclusion and future work
 
-The project demonstrates six cooperating patterns with validated rental creation, configurable pricing, composable extras and event-driven notifications. Future work can add persistent storage, fixed price snapshots with decimal money, maintenance states, concurrency control and isolated listener failures. The current version stores data in memory, retains mutable vehicle references and does not provide real payments or external SMS delivery.
+The project combines a Swing desktop workflow with six cooperating patterns for validated rentals, configurable pricing, composable extras and event notifications. Future work can add persistent storage, fixed price snapshots with decimal money, maintenance states, concurrency control and isolated listener failures. The current version stores data in memory, retains mutable vehicle references and does not provide real payments or external SMS delivery.
